@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="ko" class="h-full">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>수입 화물 통관 조회 | UNI-PASS 연동</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html { font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Helvetica, Arial, Apple SD Gothic Neo, 'Malgun Gothic', sans-serif; }
+    .glass { backdrop-filter: blur(8px); background: rgba(255,255,255,.75); }
+    .dark .glass { background: rgba(17,24,39,.6); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .progress-ring circle{ fill:none; stroke-width:10; }
+    .progress-ring .bg{ stroke:#e5e7eb; opacity:.95; }
+    .progress-ring .fg{ stroke: currentColor; transition: stroke-dashoffset .5s cubic-bezier(.4,0,.2,1); }
+    .tl-rail:before{content:"";position:absolute;left:20px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom, rgba(99,102,241,.25), rgba(99,102,241,0));}
+    .tl-item-dot{box-shadow:0 0 0 6px rgba(37,99,235,.10)}
+    .chip{border:1px solid rgba(100,116,139,.35); border-radius:999px; padding:.25rem .6rem;}
+    .chip-active{background:linear-gradient(to right, #2563eb, #6366f1); color:#fff; border-color:transparent;}
+  </style>
+</head>
+<body class="h-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 text-slate-800 dark:text-slate-100">
+  <div class="min-h-screen">
+    <!-- Header -->
+    <header class="sticky top-0 z-40 glass border-b border-slate-200/60 dark:border-slate-800/80">
+      <div class="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="h-9 w-9 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center text-[18px] font-extrabold shadow-sm">U</div>
+          <div>
+            <h1 class="text-lg sm:text-xl font-semibold leading-tight">수입 화물 통관 조회</h1>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">UNI-PASS 진행정보 기반 · 가독성 좋은, 예쁜 UI</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="densityBtn" class="rounded-xl border border-slate-300/60 dark:border-slate-700 px-3 py-2 text-xs sm:text-sm hover:bg-slate-100 dark:hover:bg-slate-800" title="밀집/넓게 보기 전환"><span class="hidden sm:inline">밀도</span> ↔</button>
+          <button id="darkToggle" class="rounded-xl border border-slate-300/60 dark:border-slate-700 px-3 py-2 text-xs sm:text-sm hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="다크 모드 토글" title="다크 모드">🌙</button>
+          <button id="settingsBtn" class="rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-4 py-2 text-xs sm:text-sm font-semibold shadow-sm hover:opacity-90">설정</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="mx-auto max-w-6xl px-4 py-6 sm:py-10">
+      <!-- Search Card -->
+      <section class="glass rounded-3xl border border-slate-200/60 dark:border-slate-800/80 p-5 sm:p-7 shadow-sm">
+        <div class="flex flex-col lg:flex-row lg:items-end gap-6">
+          <div class="grow">
+            <label class="block text-sm font-medium mb-2">조회 구분</label>
+            <div id="typeGroup" class="grid grid-cols-3 gap-2 sm:gap-3">
+              <button data-type="ref" class="type-btn rounded-xl border border-slate-300/60 dark:border-slate-700 px-3 py-2.5 text-sm font-semibold">화물관리번호</button>
+              <button data-type="mbl" class="type-btn rounded-xl border border-slate-300/60 dark:border-slate-700 px-3 py-2.5 text-sm font-semibold">Master B/L</button>
+              <button data-type="hbl" class="type-btn rounded-xl border border-slate-300/60 dark:border-slate-700 px-3 py-2.5 text-sm font-semibold">House B/L</button>
+            </div>
+          </div>
+          <div>
+            <label for="year" class="block text-sm font-medium mb-2">B/L 년도</label>
+            <select id="year" class="w-full rounded-xl border border-slate-300/60 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm"></select>
+          </div>
+          <div class="grow">
+            <label for="query" class="block text-sm font-medium mb-2">번호 입력</label>
+            <input id="query" placeholder="예: HBL1234567890" class="w-full rounded-xl border border-slate-300/60 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm">
+            <p class="mt-1 text-xs text-slate-500">Tip: <span class="border rounded px-1">Ctrl</span> + <span class="border rounded px-1">K</span> 로 입력창 포커스</p>
+          </div>
+          <div class="flex gap-2">
+            <button id="demoBtn" class="rounded-xl border border-slate-300/60 dark:border-slate-700 px-4 py-2.5 text-sm">샘플 보기</button>
+            <button id="searchBtn" class="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2.5 text-sm font-semibold shadow hover:opacity-95">조회</button>
+          </div>
+        </div>
+        <p class="mt-3 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+          브라우저에서 직접 UNI-PASS 오픈API를 호출하면 CORS로 차단될 수 있습니다. <span class="font-semibold">설정</span>에서 프록시 URL과 API Key를 저장해 주세요.
+        </p>
+      </section>
+
+      <!-- Sticky sub header -->
+      <div id="subHeader" class="hidden sticky top-[72px] z-30 mt-4">
+        <div class="glass rounded-2xl border border-slate-200/60 dark:border-slate-800/80 px-4 py-2 flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div id="titleLine" class="text-sm sm:text-base font-semibold truncate"></div>
+            <div id="idLine" class="mono text-xs text-slate-500 dark:text-slate-400 truncate"></div>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <a href="#timelineSec" class="rounded-lg border px-2 py-1">타임라인</a>
+            <a href="#infoSec" class="rounded-lg border px-2 py-1">상세정보</a>
+            <button id="copyIdsBtn" class="rounded-lg border px-2 py-1">복사</button>
+            <button id="resetBtn" class="rounded-lg border px-2 py-1">초기화</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <section id="results" class="mt-8 hidden space-y-6">
+        <div id="toast" class="hidden rounded-2xl border border-amber-300/60 bg-amber-50 text-amber-900 px-4 py-3 text-sm"></div>
+
+        <!-- Summary -->
+        <div id="summaryCard" class="glass rounded-3xl border border-slate-200/60 dark:border-slate-800/80 p-5 sm:p-7 shadow-sm">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="min-w-0 lg:col-span-2">
+              <div class="flex items-center gap-2 mb-2">
+                <div id="statusDot" class="h-2.5 w-2.5 rounded-full bg-blue-600"></div>
+                <h2 class="text-base sm:text-lg font-semibold">요약</h2>
+              </div>
+              <p id="summarySub" class="text-sm text-slate-500 dark:text-slate-400 truncate"></p>
+              <div class="mt-3 flex flex-wrap gap-2 items-center" id="badges"></div>
+            </div>
+            <div class="flex items-center justify-end">
+              <div id="ringWrap" class="progress-ring text-blue-600" aria-hidden="true">
+                <svg width="88" height="88" viewBox="0 0 88 88">
+                  <circle class="bg" cx="44" cy="44" r="36" />
+                  <circle id="ringFg" class="fg" cx="44" cy="44" r="36" stroke-dasharray="226.19" stroke-dashoffset="226.19" stroke-linecap="round"/>
+                  <text id="ringText" x="44" y="49" font-size="12" font-weight="700" fill="currentColor" text-anchor="middle">0%</text>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div id="stepper" class="mt-6"></div>
+
+          <div id="progressWrap" class="mt-4" aria-live="polite">
+            <div class="flex items-center justify-between text-xs">
+              <div id="progressLabel" class="font-medium">진행률 0%</div>
+              <div id="progressStage" class="text-slate-500 dark:text-slate-400">-</div>
+            </div>
+            <div class="mt-2 w-full rounded-full bg-slate-200 dark:bg-slate-800 h-2 overflow-hidden">
+              <div id="progressBar" class="h-2 rounded-full bg-blue-600" style="width:0%"></div>
+            </div>
+          </div>
+
+          <div id="nextAction" class="mt-4 hidden rounded-2xl border border-blue-200/70 bg-blue-50/70 text-blue-900 px-4 py-3 text-sm"></div>
+
+          <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" id="kv"></div>
+        </div>
+
+        <!-- Multiple Results -->
+        <div id="listCard" class="hidden glass rounded-3xl border border-slate-200/60 dark:border-slate-800/80 p-5 sm:p-7 shadow-sm">
+          <h2 class="text-base sm:text-lg font-semibold">복수 결과</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">하단 목록에서 선택하세요.</p>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="text-left text-slate-500">
+                <tr>
+                  <th class="py-2 pr-4">화물관리번호</th>
+                  <th class="py-2 pr-4">Master B/L</th>
+                  <th class="py-2 pr-4">House B/L</th>
+                  <th class="py-2 pr-4">양륙항/세관</th>
+                  <th class="py-2 pr-4">입항일</th>
+                  <th class="py-2 pr-4"></th>
+                </tr>
+              </thead>
+              <tbody id="listBody" class="divide-y divide-slate-200/60 dark:divide-slate-800/80"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Detail -->
+        <div id="detailGrid" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div id="timelineSec" class="lg:col-span-2 glass rounded-3xl border border-slate-200/60 dark:border-slate-800/80 p-5 sm:p-7 shadow-sm">
+            <div class="mb-3 flex items-center justify-between gap-2">
+              <h2 class="text-base sm:text-lg font-semibold">통관 진행 타임라인</h2>
+              <div class="flex items-center gap-2 text-xs">
+                <div class="hidden sm:flex items-center gap-1 text-[11px] text-slate-500">
+                  <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-blue-600"></span>일반</span>
+                  <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>검사/보류</span>
+                  <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-green-600"></span>완료</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button id="tlAllBtn" class="chip chip-active" title="전체 단계">전체</button>
+                  <button id="tlKeyBtn" class="chip" title="핵심 단계만">핵심</button>
+                  <button id="tlSortBtn" class="chip" title="정렬">최신순</button>
+                  <button id="tlKeyEditBtn" class="chip" title="핵심 단계 설정">설정</button>
+                </div>
+              </div>
+            </div>
+            <ol id="timeline" class="relative tl-rail"></ol>
+          </div>
+          <div id="infoSec" class="space-y-6">
+            <div class="glass rounded-3xl border border-slate-200/60 dark:border-slate-800/80 p-5 sm:p-7 shadow-sm">
+              <h3 class="text-base font-semibold mb-3">화물 정보</h3>
+              <dl id="cargoInfo" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></dl>
+            </div>
+            <div class="glass rounded-3xl border border-slate-200/60 dark:border-slate-800/80 p-5 sm:p-7 shadow-sm">
+              <h3 class="text-base font-semibold mb-3">입항 정보</h3>
+              <dl id="arrivalInfo" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></dl>
+            </div>
+            <div class="glass rounded-3xl border border-slate-200/60 dark:border-slate-800/80 p-5 sm:p-7 shadow-sm">
+              <h3 class="text-base font-semibold mb-3">컨테이너</h3>
+              <div id="containerList" class="text-sm text-slate-600 dark:text-slate-300">-</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Settings Modal -->
+    <dialog id="settingsModal" class="rounded-2xl p-0 w-[95vw] max-w-xl shadow-2xl">
+      <form method="dialog" class="glass rounded-2xl border border-slate-200/60 dark:border-slate-800/80">
+        <div class="p-5 sm:p-6 border-b border-slate-200/60 dark:border-slate-800/80">
+          <h2 class="text-lg font-semibold">설정</h2>
+          <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">서버리스 프록시 URL과 UNI-PASS API Key를 저장합니다. (로컬 저장)</p>
+          <div class="mt-2 text-xs text-slate-500">보기 밀도 전환: <span class="border rounded px-1">D</span> / 다크 모드: <span class="border rounded px-1">M</span></div>
+        </div>
+        <div class="p-5 sm:p-6 space-y-4">
+          <label class="block">
+            <span class="block text-sm font-medium mb-1">프록시 URL</span>
+            <input id="proxyInput" type="url" placeholder="예: https://your-domain.vercel.app/api/unipass" class="w-full rounded-xl border border-slate-300/60 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm">
+          </label>
+          <label class="block">
+            <span class="block text-sm font-medium mb-1">UNI-PASS API Key</span>
+            <input id="keyInput" type="text" placeholder="발급받은 인증키" class="w-full rounded-xl border border-slate-300/60 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm">
+          </label>
+        </div>
+        <div class="p-4 sm:p-5 flex items-center justify-end gap-2 border-t border-slate-200/60 dark:border-slate-800/80">
+          <button class="rounded-xl px-4 py-2 text-sm border border-slate-300/60 dark:border-slate-700">닫기</button>
+          <button id="saveSettings" class="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 text-sm font-semibold">저장</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Key Steps Modal -->
+    <dialog id="keyStepsModal" class="rounded-2xl p-0 w-[95vw] max-w-md shadow-2xl">
+      <form method="dialog" class="glass rounded-2xl border border-slate-200/60 dark:border-slate-800/80">
+        <div class="p-5 sm:p-6 border-b border-slate-200/60 dark:border-slate-800/80">
+          <h2 class="text-lg font-semibold">핵심 단계 설정</h2>
+          <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">타임라인의 ‘핵심’ 보기에서 표시할 단계들을 선택하세요.</p>
+        </div>
+        <div class="p-5 sm:p-6 space-y-2" id="keyStepsList"></div>
+        <div class="p-4 sm:p-5 flex items-center justify-end gap-2 border-t border-slate-200/60 dark:border-slate-800/80">
+          <button class="rounded-xl px-4 py-2 text-sm border border-slate-300/60 dark:border-slate-700">취소</button>
+          <button id="saveKeySteps" class="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 text-sm font-semibold">저장</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Event Drawer -->
+    <dialog id="eventDialog" class="rounded-xl p-0 w-[95vw] max-w-2xl shadow-2xl">
+      <div class="glass rounded-xl border border-slate-200/60 dark:border-slate-800/80">
+        <header class="flex items-center justify-between gap-3 px-5 sm:px-6 py-4 border-b border-slate-200/60 dark:border-slate-800/80">
+          <h3 id="eventTitle" class="text-base font-semibold truncate">이벤트 상세</h3>
+          <div class="flex items-center gap-2">
+            <button id="eventPrev" class="rounded-lg border px-3 py-1.5 text-xs">이전</button>
+            <button id="eventNext" class="rounded-lg border px-3 py-1.5 text-xs">다음</button>
+            <button id="eventClose" class="rounded-lg border px-3 py-1.5 text-xs" data-close>닫기</button>
+          </div>
+        </header>
+        <div class="px-5 sm:px-6 py-5 overflow-y-auto max-h-[70vh]">
+          <div id="eventBadges" class="flex flex-wrap gap-2 mb-3"></div>
+          <div id="eventMeta" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4"></div>
+          <div>
+            <h4 class="text-sm font-semibold mb-2">세부</h4>
+            <pre id="eventJSON" class="text-xs bg-slate-50 dark:bg-slate-900 p-3 rounded-xl overflow-auto"></pre>
+          </div>
+          <div class="mt-4 flex items-center gap-2">
+            <button id="copyEventBtn" class="rounded-lg border px-3 py-1.5 text-xs">JSON 복사</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+  </div>
+
+  <script>
+    const $ = (s)=>document.querySelector(s), $$=(s)=>document.querySelectorAll(s);
+
+    const state = {
+      type:'ref',
+      timeline:{ keyOnly:false, sort:'desc' },
+      lastResult:null, lastRenderedEvents:[], currentEventIndex:0,
+      keySteps:null
+    };
+
+    // History API guard (GitHub Pages는 허용, sandbox는 로컬로만 저장)
+    function canUseHistoryAPI(){
+      try{
+        const ok=/^https?:$/i.test(location.protocol)&&!/^about:|^data:|^blob:/i.test(location.href);
+        return ok && typeof history.replaceState==='function';
+      }catch{return false}
+    }
+    function safeReplaceURL(u){
+      if(!canUseHistoryAPI()){ try{ localStorage.setItem('unipassURLState', u); }catch{}; return; }
+      try{ history.replaceState(null,'',u); }
+      catch{ try{ localStorage.setItem('unipassURLState', u); }catch{} }
+    }
+
+    // Year options
+    const yearSel=document.getElementById('year');
+    const now=new Date().getFullYear();
+    [0,1,2,3,4].forEach(i=>{ const y=now-i; const o=document.createElement('option'); o.value=y; o.textContent=y; yearSel.appendChild(o); });
+
+    // Type buttons
+    function setActiveType(btn){
+      $$('.type-btn').forEach(b=>b.classList.remove('bg-blue-600','text-white','shadow','ring-2','ring-blue-600/20'));
+      btn.classList.add('bg-blue-600','text-white','shadow','ring-2','ring-blue-600/20');
+      state.type=btn.dataset.type; syncURL();
+    }
+    $$('#typeGroup .type-btn').forEach((btn,idx)=>{ btn.addEventListener('click',()=>setActiveType(btn)); if(idx===0) setActiveType(btn); });
+
+    // Theme & density
+    function applyDark(mode){ if(mode==='dark')document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); try{ localStorage.setItem('unipassTheme', mode);}catch{} }
+    document.getElementById('darkToggle').addEventListener('click',()=>{ const curr=localStorage.getItem('unipassTheme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); applyDark(curr==='dark'?'light':'dark'); });
+    applyDark(localStorage.getItem('unipassTheme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
+    document.getElementById('densityBtn').addEventListener('click',()=>document.body.classList.toggle('dense'));
+
+    // Hotkeys
+    window.addEventListener('keydown', (e)=>{
+      if(e.key.toLowerCase()==='m') document.getElementById('darkToggle').click();
+      if(e.key.toLowerCase()==='d') document.getElementById('densityBtn').click();
+      if(e.ctrlKey && e.key.toLowerCase()==='k'){ e.preventDefault(); document.getElementById('query').focus(); }
+      if(e.key==='Escape') closeEventDialog();
+      if(e.altKey && e.key==='ArrowLeft') navigateEvent(-1);
+      if(e.altKey && e.key==='ArrowRight') navigateEvent(1);
+    });
+
+    // Settings modal
+    const settingsModal=document.getElementById('settingsModal');
+    document.getElementById('settingsBtn').addEventListener('click',()=>settingsModal.showModal());
+    document.getElementById('saveSettings').addEventListener('click',(e)=>{
+      e.preventDefault();
+      try{
+        localStorage.setItem('unipassProxy', document.getElementById('proxyInput').value.trim());
+        localStorage.setItem('unipassKey', document.getElementById('keyInput').value.trim());
+      }catch{}
+      settingsModal.close();
+    });
+    document.getElementById('proxyInput').value=localStorage.getItem('unipassProxy')||'';
+    document.getElementById('keyInput').value=localStorage.getItem('unipassKey')||'';
+
+    // URL sync
+    function syncURL(){
+      try{
+        const u=new URL(location.href);
+        u.searchParams.set('type',state.type);
+        u.searchParams.set('year',document.getElementById('year').value);
+        u.searchParams.set('q',document.getElementById('query').value.trim());
+        safeReplaceURL(u.toString());
+      }catch{
+        try{ localStorage.setItem('unipassState', JSON.stringify({type:state.type,year:document.getElementById('year').value,q:document.getElementById('query').value.trim()})); }catch{}
+      }
+    }
+    document.getElementById('year').addEventListener('change', syncURL);
+    document.getElementById('query').addEventListener('input', syncURL);
+
+    // Demo data
+    const demoDetailed={ type:'DETAILED',
+      ref:'CARGO2025DEMO001', masterBL:'MBL123456789', houseBL:'HBL987654321',
+      arrival:{ date:'2025-04-04T00:00:00+09:00', customs:'부산세관', port:{ code:'KRPUS', name:'부산항' } },
+      carrier:{ code:'HDMU', name:'현대상선(주)' }, cargo:{ type:'수입 일반화물' }, clearance:{ summary:'수입신고수리' },
+      status:{ code:'RELEASED', summary:'반출완료', updatedAt:'2025-04-12T13:25:31+09:00' },
+      voyage:'HYUNDAI FAITH / 079W', product:'기계부품',
+      load:{ country:'US', port:{ code:'USTIW', name:'Tacoma, US' } },
+      billType:{ code:'H', name:'HBL' }, container:{ ref:'-', count:1 },
+      weight:{ unit:'KG', value:17736 }, package:{ unit:'GT', value:1540 },
+      events:[
+        { summary:'반출신고 (수입신고 수리후 반출)', updatedAt:'2025-04-12T13:24:33+09:00', shed:{ code:'03077011', name:'피에스에이현대부산신항만(주)' }, declarationId:'D-2025-0001', weight:{ value:17736, unit:'KG' }, carry:{ date:'2025-04-12T13:25:31+09:00', summary:'반출완료' }, package:{ unit:'GT', value:1540 } },
+        { summary:'수입신고수리', updatedAt:'2025-04-11T15:23:52+09:00', shed:{ code:'03077011', name:'피에스에이현대부산신항만(주)' }, declarationId:'D-2025-0001', weight:{ value:17736, unit:'KG' }, package:{ unit:'GT', value:1540 }},
+        { summary:'검사/검역 (식품의약품 합격)', updatedAt:'2025-04-11T11:13:50+09:00', shed:{ code:'03077011', name:'피에스에이현대부산신항만(주)' }, declarationId:'D-2025-0001', weight:{ value:17463.6, unit:'KG' }, package:{ unit:'EA', value:0 } },
+        { summary:'반입신고 (입항 반입)', updatedAt:'2025-04-05T07:26:23+09:00', shed:{ code:'03077011', name:'피에스에이현대부산신항만(주)' }, declarationId:'I-2025-0999', weight:{ value:17736, unit:'KG' }, carry:{ date:'2025-04-05T07:25:45+09:00', summary:'장치장 입고' }, package:{ unit:'GT', value:1540 } },
+        { summary:'입항적하목록 제출', updatedAt:'2025-04-03T16:05:09+09:00', shed:{ code:'03077011', name:'피에스에이현대부산신항만(주)' }, declarationId:'M-2025-0007', weight:{ value:17736, unit:'KG' }, package:{ unit:'GT', value:1540 } }
+      ]
+    };
+    const demoMultiple={ type:'MULTIPLE', records:[
+      { ref:'CARGO2025DEMO001', masterBL:'MBL123456789', houseBL:'HBL987654321', arrival:{ date:'2025-04-04T00:00:00+09:00', port:{ code:'KRPUS', name:'부산항' } }, carrier:{ code:'HDMU', name:'현대상선(주)' } },
+      { ref:'CARGO2025DEMO002', masterBL:'MBL123456789', houseBL:'HBL222333444', arrival:{ date:'2025-04-06T00:00:00+09:00', port:{ code:'KRINC', name:'인천항' } }, carrier:{ code:'CKYH', name:'CKYH' } }
+    ]};
+
+    // Helpers
+    const STEP_ORDER=['입항적하목록 제출','반입신고','검사','수입신고수리','반출신고','반출완료'];
+    const statusTone=(s)=>/반출완료|RELEASED/i.test(s||'')?'success':/보류|검사|검역|HOLD|심사/i.test(s||'')?'warning':'info';
+    function fmtDT(s){ if(!s) return '-'; const d=new Date(s); if(isNaN(d)) return s; const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}` }
+    function badge(text, tone='default'){ const toneCls = tone==='success'?'bg-green-50 text-green-800 border-green-200/70':tone==='warning'?'bg-amber-50 text-amber-800 border-amber-200/70':tone==='info'?'bg-blue-50 text-blue-800 border-blue-200/70':'border-slate-300/60'; return `<span class='inline-flex items-center rounded-full border ${toneCls} px-3 py-1 text-xs font-medium'>${text}</span>` }
+    function kv(label, value, copyValue){ return `<div class='rounded-2xl border border-slate-200/60 dark:border-slate-800/80 p-3 group bg-white/50 dark:bg-slate-900/50'><div class='flex items-center justify-between gap-2'><div class='text-xs text-slate-500'>${label}</div>${copyValue?`<button data-copy="${String(copyValue).replace(/"/g,'&quot;')}" class='opacity-0 group-hover:opacity-100 transition rounded-md border px-2 py-0.5 text-[10px]'>복사</button>`:''}</div><div class='text-sm font-medium break-all ${/BL|번호|코드|ref/i.test(label)?'mono':''}'>${value ?? '-'}</div></div>`; }
+
+    function getKeySteps(){ if(state.keySteps) return state.keySteps; try { const raw = localStorage.getItem('unipassKeySteps'); if(raw){ state.keySteps = JSON.parse(raw); } } catch {} if(!Array.isArray(state.keySteps) || !state.keySteps.length) state.keySteps = STEP_ORDER.slice(); return state.keySteps; }
+    function saveKeySteps(list){ state.keySteps = list.slice(); try{ localStorage.setItem('unipassKeySteps', JSON.stringify(state.keySteps)); }catch{} }
+
+    function currentStepIndex(data){ const texts = [data?.status?.summary, ...(data?.events||[]).map(e=>e.summary)].filter(Boolean).join(' '); for(let i=STEP_ORDER.length-1;i>=0;i--){ if(texts.includes(STEP_ORDER[i])) return i; } return 0; }
+    function progressPercentFromIndex(i){ const max = STEP_ORDER.length-1; return Math.max(0, Math.min(100, Math.round((i/max)*100))); }
+
+    function renderStepper(idx){
+      const items = STEP_ORDER.map((name,i)=>{
+        const active=i<=idx;
+        return `<div class='flex items-center gap-2'><div class='h-9 w-9 rounded-full ${active?'bg-blue-600 text-white shadow-sm':'bg-slate-200 dark:bg-slate-700 text-slate-600'} flex items-center justify-center text-xs font-semibold'>${i+1}</div><div class='text-xs sm:text-sm ${active?'font-semibold':'text-slate-500 dark:text-slate-400'}'>${name}</div></div>`;
+      }).join("<div class='flex-1 h-[2px] bg-slate-200 dark:bg-slate-700 mx-2 hidden sm:block'></div>");
+      document.getElementById('stepper').innerHTML = `<div class='flex items-center'>${items}</div>`;
+    }
+
+    function setProgressRing(percent, tone){
+      const fg = document.getElementById('ringFg'); const txt = document.getElementById('ringText'); const wrap = document.getElementById('ringWrap');
+      if(!fg || !txt || !wrap) return;
+      const r=36, C=2*Math.PI*r; const p = Math.max(0, Math.min(100, percent));
+      fg.setAttribute('stroke-dasharray', C.toFixed(2));
+      fg.setAttribute('stroke-dashoffset', (C*(1-p/100)).toFixed(2));
+      wrap.style.color = tone==='success'? '#16a34a' : tone==='warning'? '#f59e0b' : '#2563eb';
+      txt.textContent = `${p}%`;
+    }
+
+    function renderProgress(idx, data){
+      const percent = progressPercentFromIndex(idx);
+      const stage = STEP_ORDER[idx] || '-';
+      const tone = statusTone(data?.status?.summary||'');
+      const bar=document.getElementById('progressBar');
+      if(bar){ bar.style.width = percent + '%'; bar.className = `h-2 rounded-full ${tone==='success'? 'bg-green-600': tone==='warning'?'bg-amber-500':'bg-blue-600'}`; }
+      document.getElementById('progressLabel').textContent = `진행률 ${percent}%`;
+      document.getElementById('progressStage').textContent = stage;
+      const dot=document.getElementById('statusDot');
+      if(dot){ dot.className = `h-2.5 w-2.5 rounded-full ${tone==='success'?'bg-green-500':tone==='warning'?'bg-amber-500':'bg-blue-600'}`; }
+      setProgressRing(percent, tone);
+      const next = STEP_ORDER[idx+1];
+      const na = document.getElementById('nextAction');
+      if(next){
+        na.className = `mt-4 rounded-2xl border ${tone==='warning'?'border-amber-200/70 bg-amber-50/70 text-amber-900':'border-blue-200/70 bg-blue-50/70 text-blue-900'} px-4 py-3 text-sm`;
+        na.textContent = `다음 단계: ${next} 진행 예상`;
+        na.classList.remove('hidden');
+      } else na.classList.add('hidden');
+    }
+
+    function stepToneByEvent(summary){
+      if(/반출완료|반출신고/i.test(summary)) return 'success';
+      if(/검사|검역|보류|HOLD|심사/i.test(summary)) return 'warning';
+      return 'info';
+    }
+
+    function renderTimeline(data){
+      const list = document.getElementById('timeline'); if(!list) return;
+      const desc = state.timeline.sort === 'desc';
+      let events = (data.events || []).slice();
+      events.sort((a,b)=> desc ? new Date(b.updatedAt) - new Date(a.updatedAt) : new Date(a.updatedAt) - new Date(b.updatedAt));
+      if(state.timeline.keyOnly){
+        const important = new Set(getKeySteps());
+        events = events.filter(e=> Array.from(important).some(s=> (e.summary||'').includes(s)) );
+      }
+      state.lastRenderedEvents = events;
+      let lastDate = '';
+      list.innerHTML = events.map((e, idx)=>{
+        const d=new Date(e.updatedAt);
+        const dateStr = isNaN(d)? '' : `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        const showDate = dateStr !== lastDate; if(showDate) lastDate = dateStr;
+        const tone = stepToneByEvent(e.summary||'');
+        const dotColor = tone==='success'? 'bg-green-600' : tone==='warning' ? 'bg-amber-500' : 'bg-blue-600';
+        const dateBadge = showDate ? `<div class='text-[11px] text-slate-500 dark:text-slate-400 mb-2 pt-1'>${dateStr}</div>` : '';
+        return `<li class='relative pl-14 pb-6' data-idx='${idx}'>
+          <span class='absolute left-4 top-1.5 h-4 w-4 rounded-full ${dotColor} tl-item-dot'></span>
+          ${dateBadge}
+          <div class='flex items-center justify-between gap-3'>
+            <button class='text-left text-sm font-semibold hover:underline decoration-dotted underline-offset-4' data-open='${idx}'>${e.summary||'-'}</button>
+            <div class='text-[11px] text-slate-500 dark:text-slate-400'>${fmtDT(e.updatedAt)}</div>
+          </div>
+          <div class='mt-0.5 text-xs text-slate-500 dark:text-slate-400'>장치장 ${e.shed?.name||'-'} ${e.shed?.code?`<span class="mono">(${e.shed.code})</span>`:''}</div>
+          ${(e.package?.value||e.weight?.value)?`<div class='mt-1 text-[11px] text-slate-500 dark:text-slate-400'>포장 ${e.package?.value||'-'} ${e.package?.unit||''} · 중량 ${e.weight?.value||'-'} ${e.weight?.unit||''}</div>`:''}
+        </li>`;
+      }).join('');
+      $$('#timeline [data-open]').forEach(btn=> btn.addEventListener('click', (ev)=>{
+        const i = Number(ev.currentTarget.getAttribute('data-open')) || 0;
+        state.currentEventIndex = i;
+        openEventDialog(state.lastRenderedEvents[i]);
+      }));
+    }
+
+    function bindTimelineControls(data){
+      const allBtn = document.getElementById('tlAllBtn');
+      const keyBtn = document.getElementById('tlKeyBtn');
+      const sortBtn = document.getElementById('tlSortBtn');
+      const keyEditBtn = document.getElementById('tlKeyEditBtn');
+      if(allBtn){ allBtn.onclick = ()=>{ state.timeline.keyOnly=false; allBtn.classList.add('chip-active'); keyBtn.classList.remove('chip-active'); renderTimeline(data); }; }
+      if(keyBtn){ keyBtn.onclick = ()=>{ state.timeline.keyOnly=true; keyBtn.classList.add('chip-active'); allBtn.classList.remove('chip-active'); renderTimeline(data); }; }
+      if(sortBtn){ sortBtn.onclick = ()=>{ state.timeline.sort = state.timeline.sort==='desc'?'asc':'desc'; sortBtn.textContent = state.timeline.sort==='desc'?'최신순':'오래된순'; renderTimeline(data); }; }
+      if(keyEditBtn){ keyEditBtn.onclick = ()=> openKeyStepsModal(); }
+    }
+
+    function openKeyStepsModal(){
+      const modal = document.getElementById('keyStepsModal');
+      const list = document.getElementById('keyStepsList');
+      const steps = STEP_ORDER.slice();
+      const selected = new Set(getKeySteps());
+      list.innerHTML = steps.map(s=>{
+        const id = 'ks_'+btoa(unescape(encodeURIComponent(s))).replace(/=/g,'');
+        return `<label for='${id}' class='flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50'>
+          <input id='${id}' type='checkbox' ${selected.has(s)?'checked':''} data-step='${s}' class='accent-blue-600'>
+          <span class='text-sm'>${s}</span>
+        </label>`;
+      }).join('');
+      modal.showModal();
+      document.getElementById('saveKeySteps').onclick = (e)=>{
+        e.preventDefault();
+        const chosen = Array.from(list.querySelectorAll('input[type="checkbox"]'))
+          .filter(i=>i.checked).map(i=>i.getAttribute('data-step'));
+        saveKeySteps(chosen);
+        modal.close();
+        if(state.timeline.keyOnly) renderTimeline(state.lastResult || demoDetailed);
+      }
+    }
+
+    function openEventDialog(ev){
+      const dlg = document.getElementById('eventDialog'); if(!dlg) return;
+      const idx = state.currentEventIndex; const total = state.lastRenderedEvents.length;
+      const tone = stepToneByEvent(ev?.summary||'');
+      document.getElementById('eventTitle').textContent = ev?.summary || '이벤트 상세';
+      const badges = [];
+      badges.push(badge(`처리시각 ${fmtDT(ev?.updatedAt)}`,'info'));
+      if(ev?.declarationId) badges.push(badge(`신고번호 ${ev.declarationId}`,'info'));
+      if(ev?.carry?.summary) badges.push(badge(ev.carry.summary, tone==='success'?'success':(tone==='warning'?'warning':'info')));
+      document.getElementById('eventBadges').innerHTML = badges.join('');
+      document.getElementById('eventMeta').innerHTML = [
+        ['장치장', `${ev?.shed?.name||'-'} ${ev?.shed?.code?`(${ev.shed.code})`:''}`],
+        ['중량', `${ev?.weight?.value??'-'} ${ev?.weight?.unit??''}`],
+        ['포장', `${ev?.package?.value??'-'} ${ev?.package?.unit??''}`],
+        ['Carry Date', fmtDT(ev?.carry?.date)],
+        ['비고', ev?.notes||'-']
+      ].map(([k,v])=>`<div>${kv(k,v)}</div>`).join('');
+      try{ document.getElementById('eventJSON').textContent = JSON.stringify(ev, null, 2); }catch{ document.getElementById('eventJSON').textContent = '' }
+      document.getElementById('eventPrev').disabled = (idx<=0);
+      document.getElementById('eventNext').disabled = (idx>=total-1);
+      dlg.showModal();
+    }
+    function closeEventDialog(){ const dlg=document.getElementById('eventDialog'); if(dlg && dlg.open) dlg.close(); }
+    function navigateEvent(delta){
+      if(!state.lastRenderedEvents.length) return;
+      let next = state.currentEventIndex + delta;
+      next = Math.max(0, Math.min(state.lastRenderedEvents.length-1, next));
+      state.currentEventIndex = next;
+      openEventDialog(state.lastRenderedEvents[next]);
+    }
+    document.getElementById('eventDialog')?.addEventListener('click', (e)=>{ if(e.target.matches('[data-close]')) closeEventDialog(); });
+    document.getElementById('eventClose')?.addEventListener('click', closeEventDialog);
+    document.getElementById('eventPrev')?.addEventListener('click', ()=> navigateEvent(-1));
+    document.getElementById('eventNext')?.addEventListener('click', ()=> navigateEvent(1));
+    document.getElementById('copyEventBtn')?.addEventListener('click', ()=>{ const txt=document.getElementById('eventJSON')?.textContent||''; navigator.clipboard?.writeText(txt); });
+
+    function renderResult(data){
+      document.getElementById('results').classList.remove('hidden');
+      document.getElementById('subHeader').classList.remove('hidden');
+      state.lastResult = data;
+
+      const summary = (data.type === 'DETAILED') ? data : null;
+      const badges = [];
+      if(summary){
+        if(summary.status?.summary) badges.push(badge(summary.status.summary, statusTone(summary.status.summary)));
+        if(summary.clearance?.summary) badges.push(badge(summary.clearance.summary,'info'));
+        if(summary.billType?.name) badges.push(badge(summary.billType.name));
+      }
+      document.getElementById('badges').innerHTML = badges.join('');
+      const parts = [];
+      if(summary?.arrival?.port?.name) parts.push(`양륙항 ${summary.arrival.port.name}`);
+      if(summary?.arrival?.customs) parts.push(summary.arrival.customs);
+      document.getElementById('titleLine').textContent = parts.join(' · ');
+      const idTexts = [summary?.ref && `Ref ${summary.ref}`, summary?.masterBL && `MBL ${summary.masterBL}`, summary?.houseBL && `HBL ${summary.houseBL}`].filter(Boolean).join(' · ');
+      document.getElementById('idLine').textContent = idTexts;
+      document.getElementById('copyIdsBtn').onclick = () => { if(!idTexts) return; navigator.clipboard?.writeText(idTexts); };
+      document.getElementById('resetBtn').onclick = () => {
+        document.getElementById('query').value=''; document.getElementById('results').classList.add('hidden');
+        document.getElementById('subHeader').classList.add('hidden'); const t=document.getElementById('toast'); t.classList.add('hidden'); t.textContent='';
+      };
+
+      const subs = [];
+      if(summary?.masterBL) subs.push(`MBL ${summary.masterBL}`);
+      if(summary?.houseBL) subs.push(`HBL ${summary.houseBL}`);
+      if(summary?.arrival?.port?.name) subs.push(`양륙항 ${summary.arrival.port.name}`);
+      document.getElementById('summarySub').textContent = subs.join(' · ');
+
+      const kvs = [];
+      if(summary){
+        kvs.push(kv('처리일시', fmtDT(summary.status?.updatedAt)));
+        kvs.push(kv('세관', summary.arrival?.customs));
+        kvs.push(kv('입항일', fmtDT(summary.arrival?.date)));
+        kvs.push(kv('선박/편명', summary.voyage));
+        kvs.push(kv('화물관리번호(Ref)', summary.ref, summary.ref));
+        kvs.push(kv('Master B/L', summary.masterBL, summary.masterBL));
+        kvs.push(kv('House B/L', summary.houseBL, summary.houseBL));
+        kvs.push(kv('양륙항', `${summary.arrival?.port?.code||''} / ${summary.arrival?.port?.name||''}`));
+      }
+      document.getElementById('kv').innerHTML = kvs.join('');
+      $$('#kv [data-copy]').forEach(btn=> btn.addEventListener('click', ()=> navigator.clipboard?.writeText(btn.getAttribute('data-copy')||'')));
+
+      if(summary){ const idx = currentStepIndex(summary); renderStepper(idx); renderProgress(idx, summary); }
+
+      const isMultiple = data.type === 'MULTIPLE';
+      const isDetailed = data.type === 'DETAILED';
+      document.getElementById('listCard').classList.toggle('hidden', !isMultiple);
+      document.getElementById('detailGrid').classList.toggle('hidden', !isDetailed);
+
+      if(isMultiple){
+        document.getElementById('listBody').innerHTML = data.records.map((r)=>`
+          <tr class='odd:bg-slate-50/60 dark:odd:bg-slate-800/40 hover:bg-blue-50/60 dark:hover:bg-blue-900/10'>
+            <td class='py-3 pr-4 whitespace-nowrap mono'>${r.ref}</td>
+            <td class='py-3 pr-4 whitespace-nowrap mono'>${r.masterBL}</td>
+            <td class='py-3 pr-4 whitespace-nowrap mono'>${r.houseBL}</td>
+            <td class='py-3 pr-4 whitespace-nowrap'>${r.arrival?.port?.name ?? '-'} / ${r.arrival?.customs ?? '-'}</td>
+            <td class='py-3 pr-4 whitespace-nowrap'>${fmtDT(r.arrival?.date)}</td>
+            <td class='py-3 pr-4'><button class='select-row rounded-lg border px-3 py-1 text-xs' data-ref='${r.ref}'>상세</button></td>
+          </tr>`).join('');
+        $$('.select-row').forEach(btn=> btn.addEventListener('click', ()=> renderResult(demoDetailed)));
+      }
+      if(isDetailed){ bindTimelineControls(summary); renderTimeline(summary); }
+    }
+
+    function showSkeleton(on){ const add=(el,cls)=> el&&el.classList[on?'add':'remove'](cls); add(document.getElementById('summaryCard'),'animate-pulse'); add(document.getElementById('detailGrid'),'animate-pulse'); add(document.getElementById('listCard'),'animate-pulse'); }
+
+    async function fetchReal(){
+      const proxy=localStorage.getItem('unipassProxy')||'';
+      const key=localStorage.getItem('unipassKey')||'';
+      const t=document.getElementById('toast');
+      t.classList.add('hidden'); t.textContent='';
+      if(!proxy||!key){
+        t.textContent='프록시 URL과 API Key가 없어 샘플 데이터를 표시합니다. 설정에서 등록하세요.';
+        t.classList.remove('hidden'); renderResult(demoDetailed); return;
+      }
+      const params=new URLSearchParams();
+      params.set('type', state.type);
+      params.set('year', document.getElementById('year').value);
+      const q=document.getElementById('query').value.trim();
+      if(state.type==='ref') params.set('ref', q);
+      if(state.type==='mbl') params.set('mbl', q);
+      if(state.type==='hbl') params.set('hbl', q);
+
+      document.getElementById('searchBtn').disabled=true;
+      document.getElementById('searchBtn').textContent='조회 중…';
+      showSkeleton(true);
+      try{
+        const res=await fetch(`${proxy}?${params.toString()}`,{ headers:{'x-api-key':key}});
+        if(!res.ok) throw new Error('네트워크 오류');
+        const data=await res.json();
+        renderResult(data);
+      }catch(e){
+        console.error(e);
+        t.textContent='조회 실패: 샘플 데이터를 표시합니다. (콘솔 확인)';
+        t.classList.remove('hidden');
+        renderResult(demoDetailed);
+      } finally {
+        showSkeleton(false);
+        document.getElementById('searchBtn').disabled=false;
+        document.getElementById('searchBtn').textContent='조회';
+      }
+    }
+
+    document.getElementById('searchBtn').addEventListener('click', ()=>{ syncURL(); fetchReal(); });
+    document.getElementById('demoBtn').addEventListener('click', ()=>{ document.getElementById('results').classList.remove('hidden'); renderResult(Math.random()>0.5?demoDetailed:demoMultiple); });
+
+    // Init: restore state if any
+    (function init(){
+      let type,year,q;
+      try{ const url=new URL(location.href); type=url.searchParams.get('type'); year=url.searchParams.get('year'); q=url.searchParams.get('q'); }catch{}
+      if(!(type||year||q)){
+        try{ const savedURL=localStorage.getItem('unipassURLState'); if(savedURL){ const u2=new URL(savedURL); type=type||u2.searchParams.get('type'); year=year||u2.searchParams.get('year'); q=q||u2.searchParams.get('q'); } }catch{}
+        if(!(type||year||q)){
+          try{ const raw=localStorage.getItem('unipassState'); if(raw){ const obj=JSON.parse(raw); type=obj.type; year=obj.year; q=obj.q; } }catch{}
+        }
+      }
+      if(type){ const btn=document.querySelector(`[data-type="${type}"]`); if(btn) setActiveType(btn); }
+      if(year){ document.getElementById('year').value=year; }
+      if(q){ document.getElementById('query').value=q; }
+      getKeySteps();
+    })();
+  </script>
+</body>
+</html>
