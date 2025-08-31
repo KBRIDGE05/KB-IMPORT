@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root { --ring: 0 0% 0%; --ring-bg:#e5e7eb; }
+    :root { --ring-bg:#e5e7eb; }
     html { font-family: 'Pretendard', system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif; }
     .glass { backdrop-filter: blur(8px); background: rgba(255,255,255,.75); }
     .dark .glass { background: rgba(17,24,39,.6); }
@@ -24,11 +24,16 @@
     .progress-ring text{ font-size:12px; font-weight:700; fill: currentColor; text-anchor: middle; }
     .kbd{ border:1px solid rgba(100,116,139,.35); border-bottom-width:2px; padding:.1rem .35rem; border-radius:.375rem; background:rgba(248,250,252,.8); }
     /* Timeline */
-    .tl-rail:before{content:"";position:absolute;left:20px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom, rgba(99,102,241,.25), rgba(99,102,241,.0));}
+    .tl-rail:before{content:"";position:absolute;left:20px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom, rgba(99,102,241,.25), rgba(99,102,241,0));}
     .tl-item-dot{box-shadow:0 0 0 6px rgba(37,99,235,.10)}
     .tl-date{box-shadow:0 1px 0 0 rgba(148,163,184,.25) inset}
     .chip{border:1px solid rgba(100,116,139,.35); border-radius:999px; padding:.25rem .6rem;}
     .chip-active{background:linear-gradient(to right, #2563eb, #6366f1); color:#fff; border-color:transparent;}
+    /* Drawer */
+    dialog.drawer{ border:none; padding:0; background:transparent; }
+    .drawer-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.35); }
+    .drawer-panel{ position:fixed; top:0; right:0; height:100%; width:min(520px,95vw); background:rgba(255,255,255,.98); color:#0f172a; box-shadow: -8px 0 30px rgba(2,6,23,.25); }
+    .dark .drawer-panel{ background:rgba(2,6,23,.98); color:#e2e8f0; }
   </style>
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 text-slate-800 dark:text-slate-100">
@@ -183,6 +188,7 @@
                   <button id="tlAllBtn" class="chip chip-active" title="전체 단계">전체</button>
                   <button id="tlKeyBtn" class="chip" title="핵심 단계만">핵심</button>
                   <button id="tlSortBtn" class="chip" title="정렬">최신순</button>
+                  <button id="tlKeyEditBtn" class="chip" title="핵심 단계 설정">설정</button>
                 </div>
               </div>
             </div>
@@ -232,6 +238,47 @@
         </div>
       </form>
     </dialog>
+
+    <!-- Key Steps Modal -->
+    <dialog id="keyStepsModal" class="rounded-2xl p-0 w-[95vw] max-w-md shadow-2xl">
+      <form method="dialog" class="glass rounded-2xl border border-slate-200/60 dark:border-slate-800/80">
+        <div class="p-5 sm:p-6 border-b border-slate-200/60 dark:border-slate-800/80">
+          <h2 class="text-lg font-semibold">핵심 단계 설정</h2>
+          <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">타임라인의 ‘핵심’ 보기에서 표시할 단계들을 선택하세요.</p>
+        </div>
+        <div class="p-5 sm:p-6 space-y-2" id="keyStepsList"></div>
+        <div class="p-4 sm:p-5 flex items-center justify-end gap-2 border-t border-slate-200/60 dark:border-slate-800/80">
+          <button class="rounded-xl px-4 py-2 text-sm border border-slate-300/60 dark:border-slate-700">취소</button>
+          <button id="saveKeySteps" class="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 text-sm font-semibold">저장</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Event Drawer -->
+    <dialog id="eventDialog" class="drawer">
+      <div class="drawer-backdrop" data-close></div>
+      <section class="drawer-panel">
+        <header class="flex items-center justify-between gap-3 px-5 sm:px-6 py-4 border-b border-slate-200/60 dark:border-slate-800/80">
+          <h3 id="eventTitle" class="text-base font-semibold truncate">이벤트 상세</h3>
+          <div class="flex items-center gap-2">
+            <button id="eventPrev" class="rounded-lg border px-3 py-1.5 text-xs">이전</button>
+            <button id="eventNext" class="rounded-lg border px-3 py-1.5 text-xs">다음</button>
+            <button id="eventClose" class="rounded-lg border px-3 py-1.5 text-xs" data-close>닫기</button>
+          </div>
+        </header>
+        <div class="px-5 sm:px-6 py-5 overflow-y-auto h-[calc(100%-64px)]">
+          <div id="eventBadges" class="flex flex-wrap gap-2 mb-3"></div>
+          <div id="eventMeta" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4"></div>
+          <div>
+            <h4 class="text-sm font-semibold mb-2">세부</h4>
+            <pre id="eventJSON" class="text-xs bg-slate-50 dark:bg-slate-900 p-3 rounded-xl overflow-auto"></pre>
+          </div>
+          <div class="mt-4 flex items-center gap-2">
+            <button id="copyEventBtn" class="rounded-lg border px-3 py-1.5 text-xs">JSON 복사</button>
+          </div>
+        </div>
+      </section>
+    </dialog>
   </div>
 
   <script>
@@ -243,7 +290,10 @@
       year: new Date().getFullYear(),
       query: '',
       lastResult: null,
-      timeline: { keyOnly: false, sort: 'desc' } // 'asc' | 'desc'
+      timeline: { keyOnly: false, sort: 'desc' }, // 'asc' | 'desc'
+      lastRenderedEvents: [],
+      currentEventIndex: 0,
+      keySteps: null,
     };
 
     // ---------- History API safety (fix for about:srcdoc) ----------
@@ -312,6 +362,9 @@
       if(e.key.toLowerCase()==='m'){ darkToggle.click(); }
       if(e.key.toLowerCase()==='d'){ densityBtn.click(); }
       if(e.ctrlKey && e.key.toLowerCase()==='k'){ e.preventDefault(); $('#query').focus(); }
+      if(e.key==='Escape'){ closeEventDialog(); }
+      if(e.altKey && e.key==='ArrowLeft'){ navigateEvent(-1); }
+      if(e.altKey && e.key==='ArrowRight'){ navigateEvent(1); }
     });
 
     // Settings modal
@@ -368,11 +421,11 @@
       package: { unit: 'GT', value: 1540 },
       agency: '현대상선',
       events: [
-        { summary: '반출신고 (수입신고 수리후 반출)', updatedAt: '2025-04-12T13:24:33+09:00', shed: { code: '03077011', name: '피에스에이현대부산신항만(주)' }, declarationId: '', weight: { value: 17736, unit: 'KG' }, carry: { date: '2025-04-12T13:25:31+09:00', summary: '반출완료', notes: '' }, notes: '', package: { unit: 'GT', value: 1540 } },
-        { summary: '수입신고수리', updatedAt: '2025-04-11T15:23:52+09:00', shed: { code: '03077011', name: '피에스에이현대부산신항만(주)' }, declarationId: '', weight: { value: 17736, unit: 'KG' }, carry: { date: '', summary: '', notes: '' }, notes: '' , package: { unit: 'GT', value: 1540 }},
-        { summary: '검사/검역 (식품의약품 합격)', updatedAt: '2025-04-11T11:13:50+09:00', shed: { code: '03077011', name: '피에스에이현대부산신항만(주)' }, declarationId: '', weight: { value: 17463.6, unit: 'KG' }, carry: { date: '', summary: '', notes: '' }, notes: '', package: { unit: 'EA', value: 0 } },
-        { summary: '반입신고 (입항 반입)', updatedAt: '2025-04-05T07:26:23+09:00', shed: { code: '03077011', name: '피에스에이현대부산신항만(주)' }, declarationId: '', weight: { value: 17736, unit: 'KG' }, carry: { date: '2025-04-05T07:25:45+09:00', summary: '', notes: '' }, notes: '', package: { unit: 'GT', value: 1540 } },
-        { summary: '입항적하목록 제출', updatedAt: '2025-04-03T16:05:09+09:00', shed: { code: '03077011', name: '피에스에이현대부산신항만(주)' }, declarationId: '', weight: { value: 17736, unit: 'KG' }, carry: { date: '', summary: '', notes: '' }, notes: '', package: { unit: 'GT', value: 1540 } }
+        { summary: '반출신고 (수입신고 수리후 반출)', updatedAt: '2025-04-12T13:24:33+09:00', shed: { code: '03077011', name: '피에스에이현대부산신항만(주)' }, declarationId: 'D-2025-0001', weight: { value: 17736, unit: 'KG' }, carry: { date: '2025-04-12T13:25:31+09:00', summary: '반출완료', notes: '' }, notes: '장치장 반출 완료', package: { unit: 'GT', value: 1540 } },
+        { summary: '수입신고수리', updatedAt: '2025-04-11T15:23:52+09:00', shed: { code: '03077011', name: '피에스에이현대부산신항만(주)' }, declarationId: 'D-2025-0001', weight: { value: 17736, unit: 'KG' }, carry: { date: '', summary: '', notes: '' }, notes: '수리 완료' , package: { unit: 'GT', value: 1540 }},
+        { summary: '검사/검역 (식품의약품 합격)', updatedAt: '2025-04-11T11:13:50+09:00', shed: { code: '03077011', name: '피에스에이현대부산신항만(주)' }, declarationId: 'D-2025-0001', weight: { value: 17463.6, unit: 'KG' }, carry: { date: '', summary: '', notes: '' }, notes: '합격', package: { unit: 'EA', value: 0 } },
+        { summary: '반입신고 (입항 반입)', updatedAt: '2025-04-05T07:26:23+09:00', shed: { code: '03077011', name: '피에스에이현대부산신항만(주)' }, declarationId: 'I-2025-0999', weight: { value: 17736, unit: 'KG' }, carry: { date: '2025-04-05T07:25:45+09:00', summary: '장치장 입고', notes: '' }, notes: '반입', package: { unit: 'GT', value: 1540 } },
+        { summary: '입항적하목록 제출', updatedAt: '2025-04-03T16:05:09+09:00', shed: { code: '03077011', name: '피에스에이현대부산신항만(주)' }, declarationId: 'M-2025-0007', weight: { value: 17736, unit: 'KG' }, carry: { date: '', summary: '', notes: '' }, notes: '적하목록 제출', package: { unit: 'GT', value: 1540 } }
       ]
     };
 
@@ -389,9 +442,21 @@
       if(!s) return '-';
       try { const d = new Date(s); return isNaN(d) ? s : `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}` } catch { return s }
     }
+    const weekdayShort = (s) => { try{ const d=new Date(s); return isNaN(d)?'': new Intl.DateTimeFormat('ko-KR', { weekday:'short' }).format(d); }catch{ return '' } };
+    const tzLabel = (s) => {
+      try {
+        const d = new Date(s);
+        if(isNaN(d)) return '';
+        const offsetMin = -d.getTimezoneOffset();
+        const sign = offsetMin>=0?'+':'-';
+        const h = String(Math.floor(Math.abs(offsetMin)/60)).padStart(1,'0');
+        const m = String(Math.abs(offsetMin)%60).padStart(2,'0');
+        return `UTC${sign}${h}:${m}`;
+      } catch { return '' }
+    };
     const fmtDate = (s) => {
-      try { const d = new Date(s); return isNaN(d)?'':`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; } catch { return '' }
-    }
+      try { const d = new Date(s); if(isNaN(d)) return ''; return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}(${weekdayShort(s)}) ${tzLabel(s)}`; } catch { return '' }
+    };
     const kv = (label, value, copyValue) => `<div class='rounded-2xl border border-slate-200/60 dark:border-slate-800/80 p-3 group bg-white/50 dark:bg-slate-900/50'>
         <div class='flex items-center justify-between gap-2 compact-py'>
           <div class='text-xs text-slate-500'>${label}</div>
@@ -410,6 +475,15 @@
 
     // Step/Progress
     const STEP_ORDER = ['입항적하목록 제출','반입신고','검사','수입신고수리','반출신고','반출완료'];
+    function getKeySteps(){
+      if(state.keySteps) return state.keySteps;
+      try { const raw = localStorage.getItem('unipassKeySteps'); if(raw){ state.keySteps = JSON.parse(raw); } }
+      catch {}
+      if(!Array.isArray(state.keySteps) || !state.keySteps.length) state.keySteps = STEP_ORDER.slice();
+      return state.keySteps;
+    }
+    function saveKeySteps(list){ state.keySteps = list.slice(); try{ localStorage.setItem('unipassKeySteps', JSON.stringify(state.keySteps)); }catch{} }
+
     function currentStepIndex(data){
       const texts = [data?.status?.summary, ...(data?.events||[]).map(e=>e.summary)].filter(Boolean).join(' ');
       for(let i=STEP_ORDER.length-1;i>=0;i--){ if(texts.includes(STEP_ORDER[i])) return i; }
@@ -463,7 +537,6 @@
     }
 
     // --------- Timeline rendering (visibility-focused) ---------
-    const KEY_STEPS = new Set(STEP_ORDER); // 핵심 단계 필터용
     function stepToneByEvent(summary){
       if(/반출완료|반출신고/i.test(summary)) return 'success';
       if(/검사|검역|보류|HOLD|심사/i.test(summary)) return 'warning';
@@ -477,45 +550,123 @@
       events.sort((a,b)=> desc ? new Date(b.updatedAt) - new Date(a.updatedAt) : new Date(a.updatedAt) - new Date(b.updatedAt));
       // 핵심 단계만 필터
       if(state.timeline.keyOnly){
-        const important = new Set();
-        STEP_ORDER.forEach(s=>important.add(s));
+        const important = new Set(getKeySteps());
         events = events.filter(e=> Array.from(important).some(s=> (e.summary||'').includes(s)) );
       }
-      // Build rows; keep one <li> per event (to preserve existing test), add date badge inside first event of each date
+      state.lastRenderedEvents = events;
+      // Build rows; keep one <li> per event (tests expect this)
       let lastDate = '';
-      const html = events.map((e, idx)=>{
+      list.innerHTML = events.map((e, idx)=>{
         const dateStr = fmtDate(e.updatedAt);
         const showDate = dateStr !== lastDate; if(showDate) lastDate = dateStr;
         const tone = stepToneByEvent(e.summary||'');
         const dotColor = tone==='success'? 'bg-green-600' : tone==='warning' ? 'bg-amber-500' : 'bg-blue-600';
         const dateBadge = showDate ? `<div class='tl-date text-[11px] text-slate-500 dark:text-slate-400 mb-2 pt-1'>${dateStr}</div>` : '';
         return `
-          <li class='relative pl-14 pb-6'>
+          <li class='relative pl-14 pb-6 tl-item' data-idx='${idx}'>
             <span class='absolute left-4 top-1.5 h-4 w-4 rounded-full ${dotColor} tl-item-dot'></span>
             ${dateBadge}
             <div class='flex items-center justify-between gap-3'>
-              <div class='text-sm font-semibold'>${e.summary || '-'}</div>
+              <button class='text-left text-sm font-semibold hover:underline decoration-dotted underline-offset-4' data-open='${idx}'>${e.summary || '-'}</button>
               <div class='text-[11px] text-slate-500 dark:text-slate-400'>${fmtDT(e.updatedAt)}</div>
             </div>
             <div class='mt-0.5 text-xs text-slate-500 dark:text-slate-400'>장치장 ${e.shed?.name || '-'} ${e.shed?.code?`<span class="mono">(${e.shed.code})</span>`:''}</div>
             ${(e.package?.value||e.weight?.value) ? `<div class='mt-1 text-[11px] text-slate-500 dark:text-slate-400'>포장 ${e.package?.value||'-'} ${e.package?.unit||''} · 중량 ${e.weight?.value||'-'} ${e.weight?.unit||''}</div>`:''}
           </li>`;
       }).join('');
-      list.innerHTML = html || `<li class='text-sm text-slate-500'>표시할 이벤트가 없습니다.</li>`;
+      // Bind open handlers
+      $$('#timeline [data-open]').forEach(btn=> btn.addEventListener('click', (ev)=>{
+        const i = Number(ev.currentTarget.getAttribute('data-open')) || 0;
+        state.currentEventIndex = i;
+        openEventDialog(state.lastRenderedEvents[i]);
+      }));
     }
 
     function bindTimelineControls(data){
       const allBtn = $('#tlAllBtn');
       const keyBtn = $('#tlKeyBtn');
       const sortBtn = $('#tlSortBtn');
+      const keyEditBtn = $('#tlKeyEditBtn');
       if(allBtn){ allBtn.onclick = ()=>{ state.timeline.keyOnly=false; allBtn.classList.add('chip-active'); keyBtn.classList.remove('chip-active'); renderTimeline(data); }; }
       if(keyBtn){ keyBtn.onclick = ()=>{ state.timeline.keyOnly=true; keyBtn.classList.add('chip-active'); allBtn.classList.remove('chip-active'); renderTimeline(data); }; }
       if(sortBtn){ sortBtn.onclick = ()=>{ state.timeline.sort = state.timeline.sort==='desc'?'asc':'desc'; sortBtn.textContent = state.timeline.sort==='desc'?'최신순':'오래된순'; renderTimeline(data); }; }
+      if(keyEditBtn){ keyEditBtn.onclick = ()=> openKeyStepsModal(); }
     }
+
+    // --------- Key steps modal ---------
+    function openKeyStepsModal(){
+      const modal = $('#keyStepsModal');
+      const list = $('#keyStepsList');
+      const steps = STEP_ORDER.slice();
+      const selected = new Set(getKeySteps());
+      list.innerHTML = steps.map(s=>{
+        const id = 'ks_'+btoa(unescape(encodeURIComponent(s))).replace(/=/g,'');
+        return `<label for='${id}' class='flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50'>
+          <input id='${id}' type='checkbox' ${selected.has(s)?'checked':''} data-step='${s}' class='accent-blue-600'>
+          <span class='text-sm'>${s}</span>
+        </label>`;
+      }).join('');
+      modal.showModal();
+      $('#saveKeySteps').onclick = (e)=>{
+        e.preventDefault();
+        const chosen = Array.from(list.querySelectorAll('input[type="checkbox"]')).filter(i=>i.checked).map(i=>i.getAttribute('data-step'));
+        saveKeySteps(chosen);
+        modal.close();
+        // If 핵심 보기 상태면 즉시 반영
+        if(state.timeline.keyOnly) renderTimeline(state.lastResult || demoDetailed);
+      };
+    }
+
+    // --------- Event drawer ---------
+    function openEventDialog(ev){
+      const dlg = $('#eventDialog');
+      if(!dlg) return;
+      const idx = state.currentEventIndex;
+      const total = state.lastRenderedEvents.length;
+      const tone = stepToneByEvent(ev?.summary||'');
+      $('#eventTitle').textContent = ev?.summary || '이벤트 상세';
+      // badges
+      const badges = [];
+      badges.push(badge(`처리시각 ${fmtDT(ev?.updatedAt)}`,'info'));
+      if(ev?.declarationId) badges.push(badge(`신고번호 ${ev.declarationId}`,'info'));
+      if(ev?.carry?.summary) badges.push(badge(ev.carry.summary, tone));
+      $('#eventBadges').innerHTML = badges.join('');
+      // meta kvs
+      $('#eventMeta').innerHTML = [
+        ['장치장', `${ev?.shed?.name||'-'} ${ev?.shed?.code?`(${ev.shed.code})`:''}`],
+        ['중량', `${ev?.weight?.value??'-'} ${ev?.weight?.unit??''}`],
+        ['포장', `${ev?.package?.value??'-'} ${ev?.package?.unit??''}`],
+        ['Carry Date', fmtDT(ev?.carry?.date)],
+        ['비고', ev?.notes||'-']
+      ].map(([k,v])=>`<div>${kv(k,v)}</div>`).join('');
+      // json
+      try{ $('#eventJSON').textContent = JSON.stringify(ev, null, 2); }catch{ $('#eventJSON').textContent = '' }
+
+      // nav buttons
+      $('#eventPrev').disabled = (idx<=0);
+      $('#eventNext').disabled = (idx>=total-1);
+
+      // open
+      dlg.showModal();
+    }
+    function closeEventDialog(){ const dlg=$('#eventDialog'); if(dlg && dlg.open) dlg.close(); }
+    function navigateEvent(delta){
+      if(!state.lastRenderedEvents.length) return;
+      let next = state.currentEventIndex + delta;
+      next = Math.max(0, Math.min(state.lastRenderedEvents.length-1, next));
+      state.currentEventIndex = next;
+      openEventDialog(state.lastRenderedEvents[next]);
+    }
+    $('#eventDialog')?.addEventListener('click', (e)=>{ if(e.target.matches('[data-close]')) closeEventDialog(); });
+    $('#eventClose')?.addEventListener('click', closeEventDialog);
+    $('#eventPrev')?.addEventListener('click', ()=> navigateEvent(-1));
+    $('#eventNext')?.addEventListener('click', ()=> navigateEvent(1));
+    $('#copyEventBtn')?.addEventListener('click', ()=>{ const txt=$('#eventJSON')?.textContent||''; navigator.clipboard?.writeText(txt); });
 
     function renderResult(data){
       $('#results').classList.remove('hidden');
       $('#subHeader').classList.remove('hidden');
+      state.lastResult = data;
 
       const summary = (data.type === 'DETAILED') ? data : null;
       const badges = [];
@@ -586,7 +737,7 @@
 
       if(data.type === 'DETAILED'){
         bindTimelineControls(summary);
-        renderTimeline(summary); // improved visibility timeline
+        renderTimeline(summary); // improved visibility timeline + drawer
       }
     }
 
@@ -665,6 +816,8 @@
       if(type){ const btn = document.querySelector(`[data-type="${type}"]`); if(btn) setActiveType(btn); }
       if(year){ $('#year').value = year; }
       if(q){ $('#query').value = q; }
+      // preload key steps
+      getKeySteps();
     })();
 
     // ---------- Minimal self-tests (console) ----------
@@ -698,6 +851,10 @@
       // Test 8: timeline filter reduces count when keyOnly enabled
       const before = $$('#timeline li').length; state.timeline.keyOnly = true; renderTimeline(demoDetailed); const after = $$('#timeline li').length; state.timeline.keyOnly = false; renderTimeline(demoDetailed);
       assert('keyOnly filter reduces or equals count', after <= before);
+      // Test 9: drawer opens and sets title
+      state.lastRenderedEvents = demoDetailed.events.slice(); state.currentEventIndex=0; openEventDialog(demoDetailed.events[0]);
+      const title = $('#eventTitle')?.textContent || ''; closeEventDialog();
+      assert('drawer title includes event summary', title.includes(demoDetailed.events[0].summary));
     }
     runSelfTests();
     window.addEventListener('keydown', (e) => { if(e.ctrlKey && e.altKey && e.key.toLowerCase()==='t'){ runSelfTests(); } });
