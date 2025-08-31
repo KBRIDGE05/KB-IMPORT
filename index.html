@@ -8,116 +8,123 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root { --ring-bg:#e5e7eb; }
-    html { font-family: 'Pretendard', system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif; }
-    .glass { backdrop-filter: blur(8px); background: rgba(255,255,255,.75); }
-    .dark .glass { background: rgba(17,24,39,.6); }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-    .line-clamp-1{ display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
-    .line-clamp-2{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-    .dense .compact-py { padding-top:.35rem !important; padding-bottom:.35rem !important; }
-    /* Progress Ring */
-    .progress-ring circle{ fill:none; stroke-width:10; }
-    .progress-ring .bg{ stroke: var(--ring-bg); opacity:.9; }
-    .progress-ring .fg{ stroke: currentColor; transition: stroke-dashoffset .5s cubic-bezier(.4,0,.2,1); }
-    .progress-ring text{ font-size:12px; font-weight:700; fill: currentColor; text-anchor: middle; }
-    .kbd{ border:1px solid rgba(100,116,139,.35); border-bottom-width:2px; padding:.1rem .35rem; border-radius:.375rem; background:rgba(248,250,252,.8); }
-    /* Timeline */
-    .tl-rail:before{content:"";position:absolute;left:20px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom, rgba(99,102,241,.25), rgba(99,102,241,0));}
-    .tl-item-dot{box-shadow:0 0 0 6px rgba(37,99,235,.10)}
-    .tl-date{box-shadow:0 1px 0 0 rgba(148,163,184,.25) inset}
-    .chip{border:1px solid rgba(100,116,139,.35); border-radius:999px; padding:.25rem .6rem;}
-    .chip-active{background:linear-gradient(to right, #2563eb, #6366f1); color:#fff; border-color:transparent;}
-    /* Drawer */
-    dialog.drawer{ border:none; padding:0; background:transparent; }
-    .drawer-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.35); }
-    .drawer-panel{ position:fixed; top:0; right:0; height:100%; width:min(520px,95vw); background:rgba(255,255,255,.98); color:#0f172a; box-shadow: -8px 0 30px rgba(2,6,23,.25); }
-    .dark .drawer-panel{ background:rgba(2,6,23,.98); color:#e2e8f0; }
-  </style>
+<style>
+  /* =============== 디자인 토큰 & 스케일 =============== */
+  :root {
+    --ui-font: 16px;           /* 기본 폰트 크기 */
+    --ui-radius: 16px;         /* 카드/버튼 라운드 */
+    --ui-border: 1px;          /* 테두리 두께 */
+    --ui-line: 1.6;            /* 라인 높이 */
+    --rail-w: 3px;             /* 타임라인 레일 두께 */
+    --dot: 12px;               /* 타임라인 점 크기 */
+  }
+  html.ui-s { --ui-font: 15px; --ui-radius: 14px; }
+  html.ui-m { --ui-font: 16px; --ui-radius: 16px; }
+  html.ui-l { --ui-font: 18px; --ui-radius: 18px; }
+
+  html { font-size: var(--ui-font); }
+  body { line-height: var(--ui-line); }
+
+  /* Tailwind 기본 rounded-* / border 보강(스케일 적용) */
+  .rounded-xl { border-radius: var(--ui-radius) !important; }
+  .rounded-2xl { border-radius: calc(var(--ui-radius) + 6px) !important; }
+  .rounded-3xl { border-radius: calc(var(--ui-radius) + 10px) !important; }
+  .border { border-width: var(--ui-border) !important; }
+
+  /* 글꼴/카드 */
+  html { font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Helvetica, Arial, Apple SD Gothic Neo, 'Malgun Gothic', sans-serif; }
+  .glass { backdrop-filter: blur(10px); background: rgba(255,255,255,.75); }
+  .dark .glass { background: rgba(17,24,39,.6); }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+  /* 진행 링 */
+  .progress-ring circle{ fill:none; stroke-width:10; }
+  .progress-ring .bg{ stroke:#e5e7eb; opacity:.95; }
+  .progress-ring .fg{ stroke: currentColor; transition: stroke-dashoffset .5s cubic-bezier(.4,0,.2,1); }
+
+  /* 타임라인(가독성 업) */
+  .tl-rail:before{ content:""; position:absolute; left:22px; top:0; bottom:0; width:var(--rail-w);
+    background:linear-gradient(to bottom, rgba(99,102,241,.30), rgba(99,102,241,0)); }
+  .tl-item-dot{ width:var(--dot); height:var(--dot); box-shadow:0 0 0 6px rgba(37,99,235,.08) }
+  .tl-item-title{ letter-spacing:.1px }
+  .tl-item-meta{ opacity:.9 }
+
+  /* 칩/세그먼트 버튼 */
+  .chip{ border:1px solid rgba(100,116,139,.35); border-radius:999px; padding:.35rem .7rem; }
+  .chip-active{ background:linear-gradient(to right, #2563eb, #6366f1); color:#fff; border-color:transparent; }
+
+  /* 폼 포커스(가시성) */
+  .field { height: 2.9rem; }
+  .field:focus { outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,.25); border-color:#3b82f6 !important; }
+
+  /* 헤더 바 색상 대비 개선 */
+  .hdr-btn { border:1px solid rgba(148,163,184,.6); }
+  .hdr-btn:hover { background: rgba(148,163,184,.12); }
+</style>
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 text-slate-800 dark:text-slate-100">
   <div class="min-h-screen">
     <!-- Header -->
-    <header class="sticky top-0 z-40 glass border-b border-slate-200/60 dark:border-slate-800/80">
-      <div class="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between gap-3">
-        <div class="flex items-center gap-3">
-          <div class="h-9 w-9 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center text-[18px] font-extrabold shadow-sm">U</div>
-          <div>
-            <h1 class="text-lg sm:text-xl font-semibold leading-tight">수입 화물 통관 조회</h1>
-            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">UNI-PASS 진행정보 기반 · 가독성 좋은, 예쁜 UI</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <button id="densityBtn" class="rounded-xl border border-slate-300/60 dark:border-slate-700 px-3 py-2 text-xs sm:text-sm hover:bg-slate-100 dark:hover:bg-slate-800" title="밀집/넓게 보기 전환"><span class="hidden sm:inline">밀도</span> ↔</button>
-          <button id="darkToggle" class="rounded-xl border border-slate-300/60 dark:border-slate-700 px-3 py-2 text-xs sm:text-sm hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="다크 모드 토글" title="다크 모드">🌙</button>
-          <button id="settingsBtn" class="rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-4 py-2 text-xs sm:text-sm font-semibold shadow-sm hover:opacity-90">설정</button>
-        </div>
-      </div>
+<div class="flex items-center gap-2">
+  <!-- UI Size -->
+  <div id="uiSize" class="hidden md:flex items-center gap-1 text-xs" title="UI 크기">
+    <button data-size="ui-s" class="hdr-btn rounded-xl px-2.5 py-1.5">S</button>
+    <button data-size="ui-m" class="hdr-btn rounded-xl px-2.5 py-1.5 font-semibold">M</button>
+    <button data-size="ui-l" class="hdr-btn rounded-xl px-2.5 py-1.5">L</button>
+  </div>
+
+  <button id="densityBtn" class="hdr-btn rounded-xl px-3 py-2 text-xs sm:text-sm" title="밀집/넓게 보기 전환">
+    <span class="hidden sm:inline">밀도</span> ↔
+  </button>
+  <button id="darkToggle" class="hdr-btn rounded-xl px-3 py-2 text-xs sm:text-sm" aria-label="다크 모드" title="다크 모드">🌙</button>
+  <button id="settingsBtn" class="rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-4 py-2 text-xs sm:text-sm font-semibold shadow-sm hover:opacity-90">
+    설정
+  </button>
+</div>
     </header>
 
 <!-- Search Card (UPDATED for alignment & visibility) -->
-<section class="glass rounded-3xl border border-slate-200/60 dark:border-slate-800/80 p-5 sm:p-7 shadow-sm">
+<!-- Search Card (VISIBILITY TUNED) -->
+<section class="glass rounded-3xl border border-slate-200/60 dark:border-slate-800/80 p-6 sm:p-8 shadow-sm">
   <div class="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-5 items-end">
     <!-- 조회 구분 -->
     <div class="md:col-span-5">
-      <label class="block text-[13px] sm:text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">조회 구분</label>
+      <label class="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">조회 구분</label>
       <div id="typeGroup" role="radiogroup" class="grid grid-cols-3 gap-2 sm:gap-3">
-        <button data-type="ref"
-          class="type-btn h-11 rounded-xl border border-slate-300/60 dark:border-slate-700 px-3 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 transition">
-          화물관리번호
-        </button>
-        <button data-type="mbl"
-          class="type-btn h-11 rounded-xl border border-slate-300/60 dark:border-slate-700 px-3 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 transition">
-          Master B/L
-        </button>
-        <button data-type="hbl"
-          class="type-btn h-11 rounded-xl border border-slate-300/60 dark:border-slate-700 px-3 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 transition">
-          House B/L
-        </button>
+        <button data-type="ref" class="type-btn field rounded-xl border border-slate-300/60 dark:border-slate-700 px-3 text-sm font-semibold transition">화물관리번호</button>
+        <button data-type="mbl" class="type-btn field rounded-xl border border-slate-300/60 dark:border-slate-700 px-3 text-sm font-semibold transition">Master B/L</button>
+        <button data-type="hbl" class="type-btn field rounded-xl border border-slate-300/60 dark:border-slate-700 px-3 text-sm font-semibold transition">House B/L</button>
       </div>
     </div>
-
-    <!-- B/L 년도 -->
+    <!-- 년도 -->
     <div class="md:col-span-2">
-      <label for="year" class="block text-[13px] sm:text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">B/L 년도</label>
-      <select id="year"
-        class="h-11 w-full rounded-xl border border-slate-300/60 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"></select>
+      <label for="year" class="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">B/L 년도</label>
+      <select id="year" class="field w-full rounded-xl border border-slate-300/60 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm"></select>
     </div>
-
-    <!-- 번호 입력 -->
+    <!-- 번호 -->
     <div class="md:col-span-5">
-      <label for="query" class="block text-[13px] sm:text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">번호 입력</label>
+      <label for="query" class="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">번호 입력</label>
       <div class="relative">
-        <!-- 아이콘 -->
         <svg class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"
              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
         <input id="query" type="text" inputmode="latin" placeholder="예: HBL1234567890"
-          class="h-11 w-full rounded-xl border border-slate-300/60 dark:border-slate-700 bg-white dark:bg-slate-900 pl-10 pr-3 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
-          aria-describedby="queryHint">
+               class="field w-full rounded-xl border border-slate-300/60 dark:border-slate-700 bg-white dark:bg-slate-900 pl-10 pr-3 text-sm">
       </div>
-      <p id="queryHint" class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-        Tip: <span class="border rounded px-1">Ctrl</span> + <span class="border rounded px-1">K</span> 로 입력창 포커스
-      </p>
+      <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Tip: <span class="border rounded px-1">Ctrl</span> + <span class="border rounded px-1">K</span> 로 입력창 포커스</p>
     </div>
-
-    <!-- 액션 버튼 -->
+    <!-- 버튼 -->
     <div class="md:col-span-12 flex justify-end gap-2 pt-1">
-      <button id="demoBtn" class="h-11 rounded-xl border border-slate-300/60 dark:border-slate-700 px-5 text-sm hover:bg-slate-100 dark:hover:bg-slate-800">
-        샘플 보기
-      </button>
-      <button id="searchBtn" class="h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 text-sm font-semibold shadow hover:opacity-95">
-        조회
-      </button>
+      <button id="demoBtn" class="field rounded-xl border border-slate-300/60 dark:border-slate-700 px-5 text-sm hover:bg-slate-100 dark:hover:bg-slate-800">샘플 보기</button>
+      <button id="searchBtn" class="field rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 text-sm font-semibold shadow hover:opacity-95">조회</button>
     </div>
   </div>
-
   <p class="mt-3 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
     브라우저에서 직접 UNI-PASS 오픈API를 호출하면 CORS로 차단될 수 있습니다. <span class="font-semibold">설정</span>에서 프록시 URL과 API Key를 저장해 주세요.
   </p>
 </section>
+
 
 
       <!-- Sticky sub header for results navigation -->
